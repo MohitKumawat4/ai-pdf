@@ -37,9 +37,14 @@ import type { Resume } from "@/types/resume";
 
 export default function ResumeViewPage() {
   const params = useParams();
+  const router = useRouter();
   const [resume, setResume] = useState<Resume | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Track navigation state for header buttons so we can show loader animations.
+  const [templateNavigating, setTemplateNavigating] = useState(false);
+  const [previewNavigating, setPreviewNavigating] = useState(false);
+  const [editNavigating, setEditNavigating] = useState(false);
 
   useEffect(() => {
     const fetchResume = async () => {
@@ -96,19 +101,75 @@ export default function ResumeViewPage() {
               Back to Dashboard
             </Button>
           </Link>
-          <div className="flex gap-2">
-            <Link href={`/resume/${resume.id}/preview`}>
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Preview & Download
-              </Button>
-            </Link>
-            <Link href={`/resume/${resume.id}/edit`}>
-              <Button size="sm">
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Resume
-              </Button>
-            </Link>
+          <div className="relative flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={templateNavigating}
+              onClick={() => {
+                if (templateNavigating) return;
+                setTemplateNavigating(true);
+                router.push(`/resume/${resume.id}/templates`);
+              }}
+            >
+              {templateNavigating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Opening...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Change Template
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={previewNavigating}
+              onClick={() => {
+                if (previewNavigating) return;
+                setPreviewNavigating(true);
+                router.push(`/resume/${resume.id}/preview`);
+              }}
+            >
+              {previewNavigating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Opening Preview...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  Preview Template
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={editNavigating}
+              onClick={() => {
+                if (editNavigating) return;
+                setEditNavigating(true);
+                router.push(`/resume/${resume.id}/edit`);
+              }}
+            >
+              {editNavigating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Opening Editor...
+                </>
+              ) : (
+                <>
+                  <Edit className="h-4 w-4" />
+                  Edit Resume
+                </>
+              )}
+            </Button>
           </div>
         </div>
 

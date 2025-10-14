@@ -147,8 +147,13 @@ export interface Resume {
 // Type for creating a new resume (without auto-generated fields)
 export type CreateResumeInput = Omit<
   Resume,
-  'id' | 'created_at' | 'updated_at'
->;
+  'id' | 'created_at' | 'updated_at' | 'user_id' | 'is_active'
+> & {
+  user_id?: string;
+  is_active?: boolean;
+  template_id?: string;
+  profile_picture?: string;
+};
 
 // Type for updating a resume (all fields optional except id)
 export type UpdateResumeInput = Partial<Omit<Resume, 'id' | 'user_id' | 'created_at'>> & {

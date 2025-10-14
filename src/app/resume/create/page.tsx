@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
   Loader2
 } from "lucide-react";
 import { createResume } from "@/lib/supabase/resume-service";
+import { createClient } from "@/lib/supabase/client";
 import type { 
   EducationEntry, 
   ExperienceEntry, 
@@ -53,6 +54,8 @@ export default function CreateResumePage() {
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [professionalSummary, setProfessionalSummary] = useState("");
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>("");
 
   // Education
   const [education, setEducation] = useState<EducationEntry[]>([{
@@ -105,6 +108,14 @@ export default function CreateResumePage() {
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>(["English"]);
 
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+    };
+  }, [profileImagePreview]);
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +123,42 @@ export default function CreateResumePage() {
     setError("");
 
     try {
+      const supabase = createClient();
+      let profilePictureUrl: string | undefined;
+
+      if (profileImageFile) {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          throw authError;
+        }
+
+        const user = authData?.user;
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+
+        const fileExt = profileImageFile.name.split(".").pop() ?? "jpg";
+        const filePath = `profile-pictures/${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("resume-profile-pictures")
+          .upload(filePath, profileImageFile, {
+            cacheControl: "3600",
+            upsert: true,
+            contentType: profileImageFile.type || "image/jpeg",
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("resume-profile-pictures")
+          .getPublicUrl(filePath);
+
+        profilePictureUrl = publicUrlData.publicUrl;
+      }
+
       const resumeData = {
         title,
         full_name: fullName,
@@ -131,6 +178,8 @@ export default function CreateResumePage() {
         certificates: certificates.filter(cert => cert.trim()),
         hobbies: hobbies.filter(hobby => hobby.trim()),
         communication_languages: languages.filter(lang => lang.trim()),
+        profile_picture: profilePictureUrl,
+        template_id: "classic",
       };
 
       const newResume = await createResume(resumeData);
@@ -336,6 +385,60 @@ export default function CreateResumePage() {
                     className="bg-white/5 border-white/10"
                   />
                 </div>
+              </div>
+
+              <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="profilePicture">Profile Picture (Optional)</Label>
+                  <Input
+                    id="profilePicture"
+                    type="file"
+                    accept="image/*"
+                    className="bg-white/5 border-white/10"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setProfileImageFile(file);
+                      if (profileImagePreview) {
+                        URL.revokeObjectURL(profileImagePreview);
+                      }
+                      if (file) {
+                        const previewUrl = URL.createObjectURL(file);
+                        setProfileImagePreview(previewUrl);
+                      } else {
+                        setProfileImagePreview("");
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Recommended size 400x400px JPG or PNG. Images are stored securely in Supabase Storage.
+                  </p>
+                </div>
+                {profileImagePreview && (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-20 w-20 overflow-hidden rounded-full border border-white/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={profileImagePreview}
+                        alt="Profile preview"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setProfileImageFile(null);
+                        if (profileImagePreview) {
+                          URL.revokeObjectURL(profileImagePreview);
+                        }
+                        setProfileImagePreview("");
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <Separator className="bg-white/10" />

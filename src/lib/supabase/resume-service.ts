@@ -48,7 +48,9 @@ export async function getResumeById(id: string): Promise<Resume | null> {
 /**
  * Create a new resume
  */
-export async function createResume(resume: CreateResumeInput): Promise<Resume> {
+export async function createResume(
+  resume: Omit<CreateResumeInput, 'user_id'> & { is_active?: boolean }
+): Promise<Resume> {
   const supabase = createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
@@ -57,11 +59,14 @@ export async function createResume(resume: CreateResumeInput): Promise<Resume> {
     throw new Error('User not authenticated');
   }
 
+  const { is_active: isActiveOverride, ...resumePayload } = resume;
+
   const { data, error } = await supabase
     .from('resumes')
     .insert({
-      ...resume,
+      ...resumePayload,
       user_id: user.id,
+      is_active: isActiveOverride ?? true,
     })
     .select()
     .single();

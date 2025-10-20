@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,8 @@ import {
   ArrowLeft,
   Loader2,
   Eye,
-  Orbit
+  Orbit,
+  LineChart
 } from "lucide-react";
 
 interface TemplateOption {
@@ -26,8 +28,8 @@ interface TemplateOption {
   tagline: string;
   highlights: string[];
   accentClass: string;
-  previewClass: string;
   icon: React.ComponentType<{ className?: string }>;
+  previewImage: string;
 }
 
 const TEMPLATE_OPTIONS: TemplateOption[] = [
@@ -37,8 +39,8 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     tagline: "Timeless two-column layout with strong typography.",
     highlights: ["Clean sections", "Bold headings", "Excellent readability"],
     accentClass: "bg-black text-white",
-    previewClass: "bg-gradient-to-br from-zinc-900 via-black to-zinc-800",
     icon: LayoutTemplate,
+    previewImage: "/templates-preview/Classic Noir.png",
   },
   {
     id: "modern",
@@ -46,8 +48,17 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     tagline: "Hero banner with spotlight profile section.",
     highlights: ["Gradient header", "Profile focus", "Side-by-side columns"],
     accentClass: "bg-gradient-to-r from-emerald-500 to-sky-500 text-white",
-    previewClass: "bg-gradient-to-br from-emerald-500 via-sky-600 to-indigo-600",
     icon: Sparkles,
+    previewImage: "/templates-preview/Morden Spotlight.png",
+  },
+  {
+    id: "slate",
+    name: "Slate Horizon",
+    tagline: "Structured monochrome palette with banded sections.",
+    highlights: ["Band headers", "Centered identity bar", "High contrast body"],
+    accentClass: "bg-gradient-to-r from-slate-700 via-slate-600 to-slate-800 text-white",
+    icon: Orbit,
+    previewImage: "/templates-preview/Slate Horizon.png",
   },
   {
     id: "minimal",
@@ -55,8 +66,17 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     tagline: "Whitespace driven aesthetic with airy spacing.",
     highlights: ["Single column", "Soft accents", "Scannable timeline"],
     accentClass: "bg-gradient-to-r from-zinc-200 to-zinc-50 text-black",
-    previewClass: "bg-gradient-to-br from-white via-zinc-100 to-zinc-200",
     icon: Eye,
+    previewImage: "/templates-preview/Minimal Aerial.png",
+  },
+  {
+    id: "emerald",
+    name: "Emerald Advisor",
+    tagline: "Refined single-column layout with finance-ready styling.",
+    highlights: ["Elegant section accents", "Bullet-led experience", "Tailored for multi-section resumes"],
+    accentClass: "border border-[#2b6750]/30 bg-white text-[#2b6750]",
+    icon: LineChart,
+    previewImage: "/templates-preview/Emrald Advisor.png",
   },
   {
     id: "elegant",
@@ -64,8 +84,8 @@ const TEMPLATE_OPTIONS: TemplateOption[] = [
     tagline: "Vertical sidebar with color-accented tags.",
     highlights: ["Left rail sidebar", "Tag callouts", "Aurora gradients"],
     accentClass: "bg-gradient-to-r from-purple-500 via-fuchsia-500 to-orange-400 text-white",
-    previewClass: "bg-gradient-to-br from-purple-500 via-fuchsia-500 to-orange-400",
     icon: Palette,
+    previewImage: "/templates-preview/Eligant Aurora.png",
   },
 ];
 
@@ -221,7 +241,7 @@ export default function ResumeTemplateSelectionPage() {
           </div>
           <div className="mt-8 grid gap-4 text-xs text-white/40 md:grid-cols-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-              <p className="text-sm font-semibold text-white">4 curated formats</p>
+              <p className="text-sm font-semibold text-white">6 curated formats</p>
               <p>Handpicked to balance density and whitespace.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
@@ -278,11 +298,15 @@ export default function ResumeTemplateSelectionPage() {
                       </CardDescription>
                     </div>
                   </div>
-                  <div className={`relative h-28 w-full overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br ${template.previewClass}`}>
-                    <div className="absolute inset-x-6 top-6 h-3 rounded-full bg-white/70" />
-                    <div className="absolute left-6 top-14 h-3 w-40 rounded-full bg-white/30" />
-                    <div className="absolute right-6 top-14 h-3 w-16 rounded-full bg-white/20" />
-                    <div className="absolute left-6 top-[88px] h-3 w-52 rounded-full bg-white/25" />
+                  {/* Template Preview Image */}
+                  <div className="relative h-48 w-full overflow-hidden rounded-xl border border-white/10 bg-white">
+                    <Image
+                      src={template.previewImage}
+                      alt={template.name}
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-5">

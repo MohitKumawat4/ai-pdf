@@ -20,7 +20,7 @@ const ShimmerButton = React.forwardRef<HTMLButtonElement, ShimmerButtonProps>(
   (
     {
       shimmerColor = "#ffffff",
-      shimmerSize = "0.05em",
+      shimmerSize = "2px",
       shimmerDuration = "3s",
       borderRadius = "100px",
       background = "rgba(0, 0, 0, 1)",
@@ -38,50 +38,53 @@ const ShimmerButton = React.forwardRef<HTMLButtonElement, ShimmerButtonProps>(
             "--shimmer-color": shimmerColor,
             "--radius": borderRadius,
             "--speed": shimmerDuration,
-            "--cut": shimmerSize,
+            "--border-width": shimmerSize,
             "--bg": background,
           } as CSSProperties
         }
         className={cn(
-          "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 px-6 py-3 text-white [background:var(--bg)] [border-radius:var(--radius)] transition-all duration-300 hover:scale-105",
+          "group relative z-0 inline-flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap px-6 py-3 text-white [border-radius:var(--radius)] transition-all duration-300 hover:scale-105",
           "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-[1px]",
           className
         )}
         ref={ref}
         {...props}
       >
-        {/* spark container */}
+        {/* Background layer - behind everything */}
         <div
           className={cn(
-            "absolute inset-0 overflow-visible [container-type:size]"
-          )}
-        >
-          {/* spark */}
-          <div className="absolute inset-0 h-[100cqh] animate-shimmer-slide [aspect-ratio:1] [border-radius:0] [mask:none]">
-            {/* spark before */}
-            <div className="animate-spin-around absolute -inset-full w-auto rotate-0 [background:conic-gradient(from_calc(270deg-(var(--spread)*0.5)),transparent_0,var(--shimmer-color)_var(--spread),transparent_var(--spread))] [translate:0_0]" />
-          </div>
-        </div>
-        {children}
-
-        {/* Highlight */}
-        <div
-          className={cn(
-            "insert-0 absolute h-full w-full",
-            "rounded-2xl px-4 py-1.5 text-sm font-medium shadow-[inset_0_-8px_10px_#ffffff1f]",
-            // transition
-            "transform-gpu transition-all duration-300 ease-in-out",
-            // on hover
-            "group-hover:shadow-[inset_0_-6px_10px_#ffffff3f]",
-            // on click
-            "group-active:shadow-[inset_0_-10px_10px_#ffffff3f]"
+            "absolute inset-0 -z-10 [background:var(--bg)] [border-radius:var(--radius)]"
           )}
         />
 
-        {/* backdrop */}
+        {/* Border shimmer container - behind content but above background */}
         <div
           className={cn(
-            "absolute -z-[20] [background:var(--bg)] [border-radius:var(--radius)] [inset:var(--cut)]"
+            "absolute inset-0 -z-[5] overflow-hidden [border-radius:var(--radius)]"
+          )}
+        >
+          {/* Rotating shimmer gradient - continuous infinite loop */}
+          <div className="animate-spin-around absolute inset-[-100%] [background:conic-gradient(from_calc(270deg-(var(--spread)*0.5)),transparent_0,var(--shimmer-color)_var(--spread),transparent_var(--spread))]" />
+        </div>
+
+        {/* Inner background to create border effect */}
+        <div
+          className={cn(
+            "absolute inset-[var(--border-width)] -z-[3] [background:var(--bg)] [border-radius:calc(var(--radius)-var(--border-width))]"
+          )}
+        />
+
+        {/* Content - on top with relative positioning */}
+        <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
+
+        {/* Subtle highlight on hover */}
+        <div
+          className={cn(
+            "absolute inset-0 z-[1] pointer-events-none",
+            "rounded-[var(--radius)] shadow-[inset_0_-8px_10px_#ffffff0f]",
+            "transform-gpu transition-all duration-300 ease-in-out",
+            "group-hover:shadow-[inset_0_-6px_10px_#ffffff1f]",
+            "group-active:shadow-[inset_0_-10px_10px_#ffffff2f]"
           )}
         />
       </button>

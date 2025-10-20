@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import ShimmerButton from "@/components/ui/shimmer-button";
 import RetroGrid from "@/components/ui/retro-grid";
 import { FileText, Mail, Lock, User, Loader2, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/auth-provider";
 
 /**
  * Signup Page Component
@@ -19,11 +21,19 @@ import { createClient } from "@/lib/supabase/client";
  */
 export default function SignupPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   // Handle email/password signup
   const handleSignup = async (e: React.FormEvent) => {
@@ -80,8 +90,8 @@ export default function SignupPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo/Header */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <FileText className="h-8 w-8" />
-          <span className="text-2xl font-bold">ResumeAI</span>
+          <Image src="/logo.png" alt="ResumePersona" width={32} height={32} className="h-8 w-8" />
+          <span className="text-2xl font-bold">ResumePersona</span>
         </Link>
 
         <Card className="border-white/10 bg-black/60 backdrop-blur-md">

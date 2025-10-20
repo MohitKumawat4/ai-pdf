@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { BorderBeam } from "@/components/ui/border-beam";
 import {
   FileText,
   Edit,
-  Download,
   ArrowLeft,
   Mail,
   Phone,
@@ -42,7 +42,7 @@ export default function ResumeViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   // Track navigation state for header buttons so we can show loader animations.
-  const [templateNavigating, setTemplateNavigating] = useState(false);
+  const [backNavigating, setBackNavigating] = useState(false);
   const [previewNavigating, setPreviewNavigating] = useState(false);
   const [editNavigating, setEditNavigating] = useState(false);
 
@@ -65,24 +65,30 @@ export default function ResumeViewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1),transparent_50%)]" />
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
       </div>
     );
   }
 
   if (error || !resume) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <Card className="max-w-md w-full border-white/10 bg-black/40 backdrop-blur-sm">
-          <CardContent className="p-8 text-center">
-            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-bold mb-2">Resume Not Found</h2>
-            <p className="text-muted-foreground mb-6">
+      <div className="relative min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1),transparent_50%)]" />
+        <Card className="relative max-w-md w-full overflow-hidden border-cyan-500/20 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl shadow-2xl shadow-cyan-500/10">
+          <BorderBeam size={200} duration={15} colorFrom="#06b6d4" colorTo="#a855f7" />
+          <CardContent className="relative p-8 text-center">
+            <div className="relative inline-block mb-6">
+              <FileText className="h-20 w-20 mx-auto text-cyan-400" />
+              <div className="absolute inset-0 bg-cyan-400/30 blur-2xl" />
+            </div>
+            <h2 className="text-3xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200">Resume Not Found</h2>
+            <p className="text-zinc-400 mb-8">
               {error || "The resume you're looking for doesn't exist."}
             </p>
             <Link href="/dashboard">
-              <Button>Back to Dashboard</Button>
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white shadow-lg shadow-cyan-500/50">Back to Dashboard</Button>
             </Link>
           </CardContent>
         </Card>
@@ -91,40 +97,42 @@ export default function ResumeViewPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(168,85,247,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:6rem_6rem] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_80%)]" />
+      {/* Floating orbs */}
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}} />
+      
+      <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header Actions */}
-        <div className="mb-8 flex items-center justify-between">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
+        <div className="mb-12 flex items-center justify-between animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="group flex items-center gap-2 hover:bg-white/10 transition-all duration-300"
+            disabled={backNavigating}
+            onClick={() => {
+              if (backNavigating) return;
+              setBackNavigating(true);
+              router.push("/dashboard");
+            }}
+          >
+            {backNavigating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Returning...
+              </>
+            ) : (
+              <>
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </>
+            )}
+          </Button>
           <div className="relative flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-              disabled={templateNavigating}
-              onClick={() => {
-                if (templateNavigating) return;
-                setTemplateNavigating(true);
-                router.push(`/resume/${resume.id}/templates`);
-              }}
-            >
-              {templateNavigating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Opening...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Change Template
-                </>
-              )}
-            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -155,7 +163,8 @@ export default function ResumeViewPage() {
               onClick={() => {
                 if (editNavigating) return;
                 setEditNavigating(true);
-                router.push(`/resume/${resume.id}/edit`);
+                // Reuse the create form in edit mode by passing the resume id as a query parameter.
+                router.push(`/resume/create?resumeId=${resume.id}`);
               }}
             >
               {editNavigating ? (
@@ -166,7 +175,7 @@ export default function ResumeViewPage() {
               ) : (
                 <>
                   <Edit className="h-4 w-4" />
-                  Edit Resume
+                  Edit details
                 </>
               )}
             </Button>

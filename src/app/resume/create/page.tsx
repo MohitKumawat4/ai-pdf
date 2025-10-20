@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { AIDescriptionGenerator } from "@/components/resume/ai-description-generator";
 import { Badge } from "@/components/ui/badge";
+import { BorderBeam } from "@/components/ui/border-beam";
 import { 
   FileText, 
   User, 
@@ -23,7 +23,7 @@ import {
   ArrowLeft,
   Loader2
 } from "lucide-react";
-import { createResume } from "@/lib/supabase/resume-service";
+import { createResume, getResumeById, updateResume } from "@/lib/supabase/resume-service";
 import { createClient } from "@/lib/supabase/client";
 import type { 
   EducationEntry, 
@@ -41,8 +41,15 @@ import type {
 
 export default function CreateResumePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get("resumeId");
+  const isEditing = Boolean(resumeId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Track back navigation so we can disable the button and show feedback.
+  const [backNavigating, setBackNavigating] = useState(false);
+  // Track fetch state when editing so we can block render until data is ready.
+  const [initializing, setInitializing] = useState(false);
 
   // Basic Information
   const [title, setTitle] = useState("My Resume");
@@ -56,6 +63,8 @@ export default function CreateResumePage() {
   const [professionalSummary, setProfessionalSummary] = useState("");
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>("");
+  const [existingProfilePicture, setExistingProfilePicture] = useState<string>("");
+  const [templateId, setTemplateId] = useState("classic");
 
   // Education
   const [education, setEducation] = useState<EducationEntry[]>([{
@@ -108,13 +117,117 @@ export default function CreateResumePage() {
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>(["English"]);
 
+  // Utility defaults to ensure the form always has at least one row available.
+  const defaultEducation: EducationEntry = {
+    institution: "",
+    degree: "",
+    field: "",
+    start_date: "",
+    end_date: "",
+    gpa: "",
+    description: "",
+  };
+
+  const defaultExperience: ExperienceEntry = {
+    company: "",
+    position: "",
+    location: "",
+    start_date: "",
+    end_date: "",
+    current: false,
+    description: "",
+    achievements: [],
+  };
+
+  const defaultProject: ProjectEntry = {
+    title: "",
+    description: "",
+    technologies: [],
+    url: "",
+    github_url: "",
+    highlights: [],
+  };
+
   useEffect(() => {
     return () => {
-      if (profileImagePreview) {
+      // Only revoke blob URLs that were created locally to avoid DOM exceptions.
+      if (profileImagePreview && profileImagePreview.startsWith("blob:")) {
         URL.revokeObjectURL(profileImagePreview);
       }
     };
   }, [profileImagePreview]);
+
+  useEffect(() => {
+    if (!resumeId) {
+      return;
+    }
+
+    const loadResume = async () => {
+      setInitializing(true);
+      setError("");
+
+      try {
+        const resume = await getResumeById(resumeId);
+
+        if (!resume) {
+          setError("Unable to locate resume for editing.");
+          return;
+        }
+
+        // Populate primitive fields.
+        setTitle(resume.title);
+        setFullName(resume.full_name);
+        setEmail(resume.email);
+        setContactNumber(resume.contact_number);
+        setAddress(resume.address ?? "");
+        setLinkedinUrl(resume.linkedin_url ?? "");
+        setPortfolioUrl(resume.portfolio_url ?? "");
+        setGithubUrl(resume.github_url ?? "");
+        setProfessionalSummary(resume.professional_summary ?? "");
+        setTemplateId(resume.template_id ?? "classic");
+
+        // Store existing profile picture so we can persist it if no new upload occurs.
+        const existingPicture = resume.profile_picture ?? "";
+        setExistingProfilePicture(existingPicture);
+        setProfileImagePreview(existingPicture);
+
+        // Adapt skills into categorized format when necessary.
+        if (Array.isArray(resume.skills) && resume.skills.length > 0) {
+          if (typeof resume.skills[0] === "string") {
+            setSkills([
+              {
+                category: "Core Skills",
+                skills: resume.skills as string[],
+              },
+            ]);
+          } else {
+            setSkills(resume.skills as SkillCategory[]);
+          }
+        } else {
+          setSkills([{ category: "Technical Skills", skills: [] }]);
+        }
+
+        // Populate nested collection data and fall back to one blank entry when needed.
+        setEducation(resume.education && resume.education.length > 0 ? resume.education : [defaultEducation]);
+        setExperience(resume.experience && resume.experience.length > 0 ? resume.experience : [defaultExperience]);
+        setProjects(resume.projects && resume.projects.length > 0 ? resume.projects : [defaultProject]);
+        setAwards(resume.awards ?? []);
+        setAchievements(resume.achievements ?? []);
+        setCertificates(resume.certificates ?? []);
+        setHobbies(resume.hobbies ?? []);
+        setLanguages(resume.communication_languages && resume.communication_languages.length > 0 ? resume.communication_languages : ["English"]);
+
+      } catch (err) {
+        console.error("Error loading resume for editing:", err);
+        setError(err instanceof Error ? err.message : "Failed to load resume data");
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    loadResume();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeId]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,6 +270,9 @@ export default function CreateResumePage() {
           .getPublicUrl(filePath);
 
         profilePictureUrl = publicUrlData.publicUrl;
+      } else if (existingProfilePicture) {
+        // Preserve previously uploaded picture when editing.
+        profilePictureUrl = existingProfilePicture;
       }
 
       const resumeData = {
@@ -179,11 +295,16 @@ export default function CreateResumePage() {
         hobbies: hobbies.filter(hobby => hobby.trim()),
         communication_languages: languages.filter(lang => lang.trim()),
         profile_picture: profilePictureUrl,
-        template_id: "classic",
+        template_id: templateId,
       };
 
-      const newResume = await createResume(resumeData);
-      router.push(`/resume/${newResume.id}`);
+      if (isEditing && resumeId) {
+        await updateResume(resumeId, resumeData);
+        router.push(`/resume/${resumeId}`);
+      } else {
+        const newResume = await createResume(resumeData);
+        router.push(`/resume/${newResume.id}`);
+      }
     } catch (err) {
       console.error("Error creating resume:", err);
       setError(err instanceof Error ? err.message : "Failed to create resume");
@@ -283,59 +404,123 @@ export default function CreateResumePage() {
     setProjects(updated);
   };
 
+  if (initializing) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1),transparent_50%)]" />
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(168,85,247,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:6rem_6rem] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_80%)]" />
+      {/* Floating orbs */}
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}} />
+      
+      <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          <h1 className="text-4xl font-bold mb-2">Create New Resume</h1>
-          <p className="text-muted-foreground">
-            Fill in your information to create a professional resume
-          </p>
+        <div className="mb-12 space-y-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="group mb-4 flex items-center gap-2 hover:bg-white/10 transition-all duration-300"
+            disabled={backNavigating || loading}
+            onClick={() => {
+              if (backNavigating || loading) return;
+              setBackNavigating(true);
+              // When editing, always take the user back to the resume view page to avoid loops.
+              if (resumeId) {
+                router.push(`/resume/${resumeId}`);
+                return;
+              }
+
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+                // Reset the loading indicator if navigation is cancelled or history is empty.
+                setTimeout(() => setBackNavigating(false), 600);
+              } else {
+                router.push("/dashboard");
+              }
+            }}
+          >
+            {backNavigating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Returning...
+              </>
+            ) : (
+              <>
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                Back
+              </>
+            )}
+          </Button>
+          <div className="space-y-3">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-700">
+              Create New Resume
+            </h1>
+            <p className="text-xl text-zinc-400 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+              Fill in your information to create a professional resume
+            </p>
+          </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500">
-            {error}
-          </div>
+          <Card className="relative overflow-hidden mb-6 border-red-500/30 bg-gradient-to-br from-red-500/20 to-red-500/10 text-red-200 backdrop-blur-xl shadow-xl shadow-red-500/20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <BorderBeam size={200} duration={15} colorFrom="#ef4444" colorTo="#dc2626" />
+            <CardContent className="relative p-4">
+              {error}
+            </CardContent>
+          </Card>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Resume Title */}
-          <Card className="border-white/10 bg-black/40 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Resume Title
+          <Card className="group relative overflow-hidden border-cyan-500/20 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl shadow-xl shadow-cyan-500/10 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <BorderBeam size={200} duration={15} delay={0} colorFrom="#06b6d4" colorTo="#a855f7" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="relative">
+                  <FileText className="h-6 w-6 text-cyan-400" />
+                  <div className="absolute inset-0 bg-cyan-400/30 blur-lg" />
+                </div>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200">Resume Title</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="relative">
               <Input
                 placeholder="e.g., Software Engineer Resume"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-white/5 border-white/10"
+                className="bg-white/5 border-cyan-500/20 focus:border-cyan-400/40 text-white placeholder:text-zinc-500 transition-colors"
                 required
               />
             </CardContent>
           </Card>
 
           {/* Basic Information */}
-          <Card className="border-white/10 bg-black/40 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Basic Information
+          <Card className="group relative overflow-hidden border-cyan-500/20 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-xl shadow-xl shadow-cyan-500/10 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <BorderBeam size={200} duration={15} delay={2} colorFrom="#06b6d4" colorTo="#a855f7" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="relative">
+                  <User className="h-6 w-6 text-cyan-400" />
+                  <div className="absolute inset-0 bg-cyan-400/30 blur-lg" />
+                </div>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200">Basic Information</span>
               </CardTitle>
-              <CardDescription>Your personal and contact details</CardDescription>
+              <CardDescription className="text-zinc-400">Your personal and contact details</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="relative space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name *</Label>

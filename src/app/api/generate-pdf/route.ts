@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import React from 'react';
-import ReactPDF from '@react-pdf/renderer';
+import { renderToStream } from '@react-pdf/renderer';
 import { ClassicPDF } from '@/components/pdf-templates/classic-pdf';
 import { ModernPDF } from '@/components/pdf-templates/modern-pdf';
 import { MinimalPDF } from '@/components/pdf-templates/minimal-pdf';
@@ -10,6 +10,7 @@ import { ElegantPDF } from '@/components/pdf-templates/elegant-pdf';
 import { SlatePDF } from '@/components/pdf-templates/slate-pdf';
 import type { Resume } from '@/types/resume';
 import type { PDFStyleSettings } from '@/types/pdf-styles';
+import type { DocumentProps } from '@react-pdf/renderer';
 import { DEFAULT_PDF_STYLES } from '@/types/pdf-styles';
 
 /**
@@ -47,17 +48,17 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'minimal':
-        pdfElement = React.createElement(MinimalPDF, { resume, styles });
+        pdfElement = React.createElement(MinimalPDF, { resume });
         break;
 
       case 'professional':
       case 'creative':
       case 'executive':
-        pdfElement = React.createElement(ProfessionalPDF, { resume, styles });
+        pdfElement = React.createElement(ProfessionalPDF, { resume });
         break;
 
       case 'emerald':
-        pdfElement = React.createElement(EmeraldPDF, { resume, styles });
+        pdfElement = React.createElement(EmeraldPDF, { resume });
         break;
 
       case 'elegant':
@@ -74,12 +75,22 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    const documentElement = pdfElement as React.ReactElement<DocumentProps>;
+
     // Generate PDF stream and convert to buffer
-    const stream = await ReactPDF.renderToStream(pdfElement);
+    const stream = await renderToStream(documentElement);
     const chunks: Buffer[] = [];
-    
-    for await (const chunk of stream as any) {
-      chunks.push(Buffer.from(chunk));
+
+    const asyncStream = stream as unknown as AsyncIterable<Uint8Array | string | Buffer>;
+
+    for await (const chunk of asyncStream) {
+      if (Buffer.isBuffer(chunk)) {
+        chunks.push(chunk);
+      } else if (typeof chunk === 'string') {
+        chunks.push(Buffer.from(chunk));
+      } else {
+        chunks.push(Buffer.from(chunk));
+      }
     }
     
     const buffer = Buffer.concat(chunks);

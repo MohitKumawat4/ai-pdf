@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
-import type { Resume } from '@/types/resume';
+import type { Resume, SkillCategory } from '@/types/resume';
 import type { PDFStyleSettings } from '@/types/pdf-styles';
 import { getPDFFont } from '@/types/pdf-styles';
 
@@ -282,7 +282,7 @@ export const ClassicPDF = ({ resume, styles: styleSettings }: ClassicPDFProps) =
             {Array.isArray(resume.skills) && typeof resume.skills[0] === 'string' ? (
               <Text style={styles.description}>{(resume.skills as string[]).join(', ')}</Text>
             ) : (
-              (resume.skills as any[]).map((skillCat, index) => (
+              (resume.skills as SkillCategory[]).map((skillCat, index) => (
                 <View key={index} style={styles.skillCategory}>
                   <Text style={styles.skillCategoryName}>{skillCat.category}:</Text>
                   <Text style={styles.skillItem}>{skillCat.skills.join(', ')}</Text>

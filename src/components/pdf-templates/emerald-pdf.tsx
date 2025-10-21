@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
-import type { Resume } from '@/types/resume';
+import type { Resume, SkillCategory } from '@/types/resume';
 
 /**
  * Emerald PDF Template
@@ -206,12 +206,12 @@ export const EmeraldPDF = ({ resume }: EmeraldPDFProps) => {
                   <Text key={index} style={styles.sidebarItem}>• {skill}</Text>
                 ))
               ) : (
-                (resume.skills as any[]).map((skillCat, index) => (
+                (resume.skills as SkillCategory[]).map((skillCat, index) => (
                   <View key={index} style={{ marginBottom: 8 }}>
                     <Text style={[styles.sidebarText, { fontWeight: 'bold', marginBottom: 3 }]}>
                       {skillCat.category}
                     </Text>
-                    {skillCat.skills.map((skill: string, i: number) => (
+                    {skillCat.skills.map((skill, i) => (
                       <Text key={i} style={styles.sidebarItem}>• {skill}</Text>
                     ))}
                   </View>

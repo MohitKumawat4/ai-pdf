@@ -74,7 +74,7 @@ export function DashboardContent({ user, resumes, resumesError }: DashboardConte
               Welcome back, {user.user_metadata?.full_name || "User"}!
             </h1>
             <p className="text-xl text-zinc-400 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-              Your career journey starts here. Let's build something amazing.
+              Your career journey starts here. Let&apos;s build something amazing.
             </p>
           </div>
           
@@ -90,7 +90,7 @@ export function DashboardContent({ user, resumes, resumesError }: DashboardConte
                 </div>
                 <div className="flex-1 space-y-2">
                   <p className="text-xl font-semibold italic text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200 leading-relaxed">
-                    "Your resume is not just a document—it's your story, your achievements, and your future."
+                    &ldquo;Your resume is not just a document—it&apos;s your story, your achievements, and your future.&rdquo;
                   </p>
                   <p className="text-sm text-zinc-400">Make every word count.</p>
                 </div>

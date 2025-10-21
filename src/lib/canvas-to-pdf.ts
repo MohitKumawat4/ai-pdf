@@ -92,21 +92,21 @@ function preprocessElementForCanvas(element: HTMLElement): HTMLElement {
       }
 
       // Handle solid colors
-      const colorProps: Array<keyof CSSStyleDeclaration> = [
+      const colorProps = [
         'color',
         'backgroundColor',
         'borderTopColor',
         'borderRightColor',
         'borderBottomColor',
         'borderLeftColor',
-      ];
+      ] as const;
 
       colorProps.forEach(prop => {
-        const value = computed[prop] as string;
+        const value = computed[prop];
         if (value && typeof value === 'string' && /(?:lab|lch|oklab|oklch|color)\(/i.test(value)) {
           try {
             const rgb = convertColorToRGB(value);
-            (el.style as any)[prop] = rgb;
+            el.style[prop] = rgb;
           } catch (e) {
             console.warn(`Failed to convert ${prop}:`, e);
           }

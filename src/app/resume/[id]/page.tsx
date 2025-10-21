@@ -27,7 +27,11 @@ import {
   Briefcase
 } from "lucide-react";
 import { getResumeById } from "@/lib/supabase/resume-service";
-import type { Resume } from "@/types/resume";
+import type {
+  Resume,
+  ExperienceEntry,
+  ProjectEntry,
+} from "@/types/resume";
 
 /**
  * Resume View/Profile Page
@@ -95,6 +99,13 @@ export default function ResumeViewPage() {
       </div>
     );
   }
+
+  const experienceEntries: ExperienceEntry[] = Array.isArray(resume.experience)
+    ? resume.experience
+    : [];
+  const projectEntries: ProjectEntry[] = Array.isArray(resume.projects)
+    ? resume.projects
+    : [];
 
   return (
     <div className="relative min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
@@ -340,7 +351,7 @@ export default function ResumeViewPage() {
         )}
 
         {/* Experience */}
-        {resume.experience && Array.isArray(resume.experience) && resume.experience.length > 0 && (
+        {experienceEntries.length > 0 && (
           <Card className="mb-6 border-white/10 bg-black/40 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -349,7 +360,7 @@ export default function ResumeViewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {resume.experience.map((exp, index) => (
+              {experienceEntries.map((exp, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
@@ -377,7 +388,7 @@ export default function ResumeViewPage() {
                       ))}
                     </ul>
                   )}
-                  {index < resume.experience.length - 1 && (
+                  {index < experienceEntries.length - 1 && (
                     <Separator className="mt-4 bg-white/10" />
                   )}
                 </div>
@@ -387,7 +398,7 @@ export default function ResumeViewPage() {
         )}
 
         {/* Projects */}
-        {resume.projects && Array.isArray(resume.projects) && resume.projects.length > 0 && (
+        {projectEntries.length > 0 && (
           <Card className="mb-6 border-white/10 bg-black/40 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -396,7 +407,7 @@ export default function ResumeViewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {resume.projects.map((project, index) => (
+              {projectEntries.map((project, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex justify-between items-start">
                     <h3 className="text-lg font-semibold">{project.title}</h3>
@@ -440,7 +451,7 @@ export default function ResumeViewPage() {
                       ))}
                     </ul>
                   )}
-                  {index < resume.projects.length - 1 && (
+                  {index < projectEntries.length - 1 && (
                     <Separator className="mt-4 bg-white/10" />
                   )}
                 </div>

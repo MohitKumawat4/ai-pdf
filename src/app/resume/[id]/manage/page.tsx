@@ -263,7 +263,7 @@ export default function ResumeManagePage() {
               </CardHeader>
               <CardContent className="relative">
                 <p className="text-sm text-zinc-400 leading-relaxed">
-                  Choose from 6 professional templates to change your resume's appearance.
+                  Choose from 6 professional templates to change your resume&apos;s appearance.
                 </p>
               </CardContent>
             </Card>

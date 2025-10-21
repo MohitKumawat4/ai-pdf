@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ import type {
  * Comprehensive form for creating a new resume with all database fields
  */
 
-export default function CreateResumePage() {
+function CreateResumePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resumeId = searchParams.get("resumeId");
@@ -1117,3 +1117,22 @@ export default function CreateResumePage() {
     </div>
   );
 }
+
+function ResumeFormFallback() {
+  return (
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-black to-zinc-900">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1),transparent_50%)]" />
+      <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+    </div>
+  );
+}
+
+function CreateResumePage() {
+  return (
+    <Suspense fallback={<ResumeFormFallback />}>
+      <CreateResumePageContent />
+    </Suspense>
+  );
+}
+
+export default CreateResumePage;
